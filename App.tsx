@@ -1,131 +1,72 @@
-/**
- * Sample React Native App
- * https://github.com/facebook/react-native
- *
- * @format
- */
+import React, {useCallback, useEffect, useState} from 'react';
+import {Share, Vibration} from 'react-native';
+import {initialTab} from './src/navigation/mainTabs';
+import {MainNavigator} from './src/navigation/MainNavigator';
+import {LoaderScreen} from './src/screens/LoaderScreen';
+import {OnboardingScreen} from './src/screens/OnboardingScreen';
+import {persistentStorage} from './src/storage/persistentStorage';
+import type {SavedItem, TabId} from './src/types';
 
-import React from 'react';
-import type {PropsWithChildren} from 'react';
-import {
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  useColorScheme,
-  View,
-} from 'react-native';
-
-import {
-  Colors,
-  DebugInstructions,
-  Header,
-  LearnMoreLinks,
-  ReloadInstructions,
-} from 'react-native/Libraries/NewAppScreen';
-
-type SectionProps = PropsWithChildren<{
-  title: string;
-}>;
-
-function Section({children, title}: SectionProps): React.JSX.Element {
-  const isDarkMode = useColorScheme() === 'dark';
-  return (
-    <View style={styles.sectionContainer}>
-      <Text
-        style={[
-          styles.sectionTitle,
-          {
-            color: isDarkMode ? Colors.white : Colors.black,
-          },
-        ]}>
-        {title}
-      </Text>
-      <Text
-        style={[
-          styles.sectionDescription,
-          {
-            color: isDarkMode ? Colors.light : Colors.dark,
-          },
-        ]}>
-        {children}
-      </Text>
-    </View>
-  );
-}
+const savedKey = 'centurion.savedItems';
 
 function App(): React.JSX.Element {
-  const isDarkMode = useColorScheme() === 'dark';
+  const [phase, setPhase] = useState<'loading' | 'onboarding' | 'app'>(
+    'loading',
+  );
+  const [activeTab, setActiveTab] = useState<TabId>(initialTab);
+  const [savedItems, setSavedItems] = useState<SavedItem[]>([]);
 
-  const backgroundStyle = {
-    backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
-  };
+  useEffect(() => {
+    persistentStorage.getJSON<SavedItem[]>(savedKey, []).then(setSavedItems);
+  }, []);
 
-  /*
-   * To keep the template simple and small we're adding padding to prevent view
-   * from rendering under the System UI.
-   * For bigger apps the reccomendation is to use `react-native-safe-area-context`:
-   * https://github.com/AppAndFlow/react-native-safe-area-context
-   *
-   * You can read more about it here:
-   * https://github.com/react-native-community/discussions-and-proposals/discussions/827
-   */
-  const safePadding = '5%';
+  const isSaved = useCallback(
+    (id: string) => savedItems.some(item => item.id === id),
+    [savedItems],
+  );
+
+  const toggleSave = useCallback((item: SavedItem) => {
+    setSavedItems(current => {
+      const exists = current.some(saved => saved.id === item.id);
+      const next = exists
+        ? current.filter(saved => saved.id !== item.id)
+        : [item, ...current];
+
+      persistentStorage.setJSON(savedKey, next);
+
+      if (!exists) {
+        Vibration.vibrate(35);
+      }
+
+      return next;
+    });
+  }, []);
+
+  const shareItem = useCallback((item: SavedItem) => {
+    Share.share({
+      title: item.title,
+      message: `${item.title}\n\n${item.text}`,
+    }).catch(() => {});
+  }, []);
+
+  if (phase === 'loading') {
+    return <LoaderScreen onComplete={() => setPhase('onboarding')} />;
+  }
+
+  if (phase === 'onboarding') {
+    return <OnboardingScreen onDone={() => setPhase('app')} />;
+  }
 
   return (
-    <View style={backgroundStyle}>
-      <StatusBar
-        barStyle={isDarkMode ? 'light-content' : 'dark-content'}
-        backgroundColor={backgroundStyle.backgroundColor}
-      />
-      <ScrollView
-        style={backgroundStyle}>
-        <View style={{paddingRight: safePadding}}>
-          <Header/>
-        </View>
-        <View
-          style={{
-            backgroundColor: isDarkMode ? Colors.black : Colors.white,
-            paddingHorizontal: safePadding,
-            paddingBottom: safePadding,
-          }}>
-          <Section title="Step One">
-            Edit <Text style={styles.highlight}>App.tsx</Text> to change this
-            screen and then come back to see your edits.
-          </Section>
-          <Section title="See Your Changes">
-            <ReloadInstructions />
-          </Section>
-          <Section title="Debug">
-            <DebugInstructions />
-          </Section>
-          <Section title="Learn More">
-            Read the docs to discover what to do next:
-          </Section>
-          <LearnMoreLinks />
-        </View>
-      </ScrollView>
-    </View>
+    <MainNavigator
+      activeTab={activeTab}
+      isSaved={isSaved}
+      onShare={shareItem}
+      onTabChange={setActiveTab}
+      savedItems={savedItems}
+      toggleSave={toggleSave}
+    />
   );
 }
-
-const styles = StyleSheet.create({
-  sectionContainer: {
-    marginTop: 32,
-    paddingHorizontal: 24,
-  },
-  sectionTitle: {
-    fontSize: 24,
-    fontWeight: '600',
-  },
-  sectionDescription: {
-    marginTop: 8,
-    fontSize: 18,
-    fontWeight: '400',
-  },
-  highlight: {
-    fontWeight: '700',
-  },
-});
 
 export default App;
