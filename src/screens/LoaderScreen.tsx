@@ -5,7 +5,6 @@ import {
   SafeAreaView,
   StatusBar,
   StyleSheet,
-  Text,
   View,
 } from 'react-native';
 import {images} from '../assets';
@@ -23,6 +22,12 @@ const isTestEnvironment =
 export function LoaderScreen({onComplete}: LoaderScreenProps) {
   const progress = useRef(new Animated.Value(0)).current;
   const adaptive = useAdaptive();
+  const trackWidth = Math.min(
+    adaptive.contentWidth * (adaptive.isTiny ? 0.74 : 0.78),
+    adaptive.isTiny ? 230 : 286,
+  );
+  const trackHeight = adaptive.isTiny ? 11 : 13;
+  const thumbSize = adaptive.isTiny ? 28 : 32;
 
   useEffect(() => {
     if (isTestEnvironment) {
@@ -48,7 +53,15 @@ export function LoaderScreen({onComplete}: LoaderScreenProps) {
 
   const width = progress.interpolate({
     inputRange: [0, 1],
-    outputRange: ['8%', '100%'],
+    outputRange: [thumbSize * 0.5, trackWidth],
+  });
+  const thumbTranslate = progress.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, trackWidth - thumbSize],
+  });
+  const thumbScale = progress.interpolate({
+    inputRange: [0, 0.5, 1],
+    outputRange: [0.94, 1.08, 0.94],
   });
 
   return (
@@ -68,35 +81,33 @@ export function LoaderScreen({onComplete}: LoaderScreenProps) {
         ]}>
         <View
           style={[
-            styles.webPanel,
+            styles.sliderWrap,
             {
-              maxWidth: adaptive.isTiny ? 260 : 286,
-              minHeight: adaptive.isTiny ? 152 : 174,
-              padding: adaptive.isTiny ? 15 : 18,
+              height: thumbSize,
+              width: trackWidth,
             },
           ]}>
-          <View style={styles.browserRow}>
-            <View style={[styles.dot, styles.redDot]} />
-            <View style={[styles.dot, styles.goldDot]} />
-            <View style={[styles.dot, styles.greenDot]} />
-          </View>
-          <Text style={[styles.title, {fontSize: adaptive.isTiny ? 21 : 24}]}>
-            Centurion Camp
-          </Text>
-          <Text
-            style={[styles.subtitle, {fontSize: adaptive.isTiny ? 13 : 14}]}>
-            Adventure scroll is opening
-          </Text>
           <View
             style={[
               styles.track,
               {
-                height: adaptive.isTiny ? 12 : 14,
-                marginTop: adaptive.isTiny ? 18 : 24,
+                borderRadius: trackHeight,
+                height: trackHeight,
               },
             ]}>
             <Animated.View style={[styles.fill, {width}]} />
           </View>
+          <Animated.View
+            style={[
+              styles.thumb,
+              {
+                borderRadius: thumbSize / 2,
+                height: thumbSize,
+                transform: [{translateX: thumbTranslate}, {scale: thumbScale}],
+                width: thumbSize,
+              },
+            ]}
+          />
         </View>
       </SafeAreaView>
     </ImageBackground>
@@ -112,60 +123,38 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  webPanel: {
-    width: '100%',
-    borderRadius: 22,
-    borderWidth: 2,
-    borderColor: colors.brown,
-    backgroundColor: 'rgba(255, 250, 240, 0.94)',
+  sliderWrap: {
+    alignItems: 'center',
+    justifyContent: 'center',
     shadowColor: colors.black,
-    shadowOpacity: 0.28,
-    shadowOffset: {width: 0, height: 10},
-    shadowRadius: 14,
-    elevation: 8,
-  },
-  browserRow: {
-    flexDirection: 'row',
-    gap: 7,
-    marginBottom: 20,
-  },
-  dot: {
-    width: 11,
-    height: 11,
-    borderRadius: 6,
-  },
-  redDot: {
-    backgroundColor: colors.red,
-  },
-  goldDot: {
-    backgroundColor: colors.gold,
-  },
-  greenDot: {
-    backgroundColor: colors.green,
-  },
-  title: {
-    color: colors.black,
-    fontWeight: '900',
-    letterSpacing: 0,
-    textAlign: 'center',
-  },
-  subtitle: {
-    color: colors.brownDark,
-    fontWeight: '700',
-    letterSpacing: 0,
-    marginTop: 8,
-    textAlign: 'center',
+    shadowOpacity: 0.22,
+    shadowOffset: {width: 0, height: 6},
+    shadowRadius: 10,
+    elevation: 5,
   },
   track: {
+    width: '100%',
     overflow: 'hidden',
-    borderRadius: 8,
-    backgroundColor: '#e5d4a5',
+    backgroundColor: 'rgba(255, 250, 240, 0.72)',
     borderColor: colors.brown,
     borderWidth: 1,
   },
   fill: {
     height: '100%',
-    borderRadius: 8,
+    borderRadius: 999,
     backgroundColor: colors.red,
+  },
+  thumb: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    backgroundColor: colors.gold,
+    borderColor: colors.brownDark,
+    borderWidth: 2,
+    shadowColor: colors.black,
+    shadowOpacity: 0.26,
+    shadowOffset: {width: 0, height: 3},
+    shadowRadius: 5,
+    elevation: 6,
   },
 });

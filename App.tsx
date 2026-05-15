@@ -9,6 +9,14 @@ import type {SavedItem, TabId} from './src/types';
 
 const savedKey = 'centurion.savedItems';
 
+function vibrateOnSave() {
+  try {
+    Vibration.vibrate(35);
+  } catch (error) {
+    void error;
+  }
+}
+
 function App(): React.JSX.Element {
   const [phase, setPhase] = useState<'loading' | 'onboarding' | 'app'>(
     'loading',
@@ -35,7 +43,7 @@ function App(): React.JSX.Element {
       persistentStorage.setJSON(savedKey, next);
 
       if (!exists) {
-        Vibration.vibrate(35);
+        vibrateOnSave();
       }
 
       return next;

@@ -1,4 +1,4 @@
-package com.centurionadventurecamp
+package com.centurion.adventure.camp
 
 import android.app.Application
 import com.facebook.react.PackageList

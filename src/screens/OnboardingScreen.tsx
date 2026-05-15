@@ -2,6 +2,7 @@ import React, {useState} from 'react';
 import {
   Image,
   ImageBackground,
+  Platform,
   SafeAreaView,
   StatusBar,
   StyleSheet,
@@ -116,6 +117,7 @@ export function OnboardingScreen({onDone}: OnboardingScreenProps) {
                   height: heroHeight,
                   marginTop: adaptive.isShort ? 0 : 8,
                 },
+                Platform.OS === 'android' && styles.androidHeroLift,
               ]}
             />
           </View>
@@ -196,6 +198,9 @@ const styles = StyleSheet.create({
   },
   hero: {
     maxWidth: '100%',
+  },
+  androidHeroLift: {
+    transform: [{translateY: -50}],
   },
   card: {
     alignItems: 'center',
