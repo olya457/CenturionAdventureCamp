@@ -1,4 +1,4 @@
-package com.centurion.adventure.camp
+package com.legionfuncamp
 
 import com.facebook.react.ReactActivity
 import com.facebook.react.ReactActivityDelegate
