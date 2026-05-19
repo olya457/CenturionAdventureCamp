@@ -31,5 +31,51 @@ target 'CenturionAdventureCamp' do
       :mac_catalyst_enabled => false,
       # :ccache_enabled => true
     )
+
+    # Xcode 26.4 fails to compile fmt 11.0.2 with consteval enabled.
+    fmt_target_updated = false
+    installer.pods_project.targets.each do |target|
+      next unless target.name == 'fmt'
+
+      target.build_configurations.each do |build_config|
+        build_config.build_settings['CLANG_CXX_LANGUAGE_STANDARD'] = 'c++17'
+      end
+      fmt_target_updated = true
+    end
+    installer.pods_project.save if fmt_target_updated
+
+    fmt_support_files = File.join(
+      installer.sandbox.root.to_s,
+      'Target Support Files',
+      'fmt',
+      'fmt.*.xcconfig'
+    )
+    Dir[fmt_support_files].each do |xcconfig|
+      contents = File.read(xcconfig)
+      contents.gsub!(
+        /^CLANG_CXX_LANGUAGE_STANDARD = .*$/,
+        'CLANG_CXX_LANGUAGE_STANDARD = c++17'
+      )
+      File.write(xcconfig, contents)
+    end
+
+    fmt_base_header = File.join(
+      installer.sandbox.root.to_s,
+      'fmt',
+      'include',
+      'fmt',
+      'base.h'
+    )
+    if File.exist?(fmt_base_header)
+      contents = File.read(fmt_base_header)
+      updated_contents = contents.gsub(
+        '#  define FMT_USE_CONSTEVAL 1',
+        '#  define FMT_USE_CONSTEVAL 0'
+      )
+      if updated_contents != contents
+        File.chmod(0o644, fmt_base_header)
+        File.write(fmt_base_header, updated_contents)
+      end
+    end
   end
 end
